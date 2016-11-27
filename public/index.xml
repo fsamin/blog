@@ -7,7 +7,215 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>François Samin -  All rights reserved.</copyright>
+    <lastBuildDate>Sat, 26 Nov 2016 09:57:16 +0100</lastBuildDate>
     <atom:link href="https://fsamin.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Build Openstack image with Packer on OVH Public Cloud</title>
+      <link>https://fsamin.github.io/blog/ovh-packer-openstack/</link>
+      <pubDate>Sat, 26 Nov 2016 09:57:16 +0100</pubDate>
+      
+      <guid>https://fsamin.github.io/blog/ovh-packer-openstack/</guid>
+      <description>
+
+&lt;h1 id=&#34;tl-dr:19904a09acc5f721904f781832408936&#34;&gt;TL;DR&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://www.packer.io/&#34;&gt;Packer&lt;/a&gt; is a tool from HashiCorp for creating machine and container images for multiple platforms from a single source configuration.&lt;/p&gt;
+
+&lt;p&gt;Here we are going to use it on &lt;a href=&#34;https://www.ovh.com/fr/&#34;&gt;OVH&lt;/a&gt; Public Cloud.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://fsamin.github.io/blog/blog/images/packer.png&#34; alt=&#34;Packer&#34; /&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;ovh-public-cloud:19904a09acc5f721904f781832408936&#34;&gt;OVH Public Cloud&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://www.ovh.com/fr/&#34;&gt;OVH&lt;/a&gt; Public Cloud is based on &lt;a href=&#34;https://www.openstack.org/&#34;&gt;Openstack&lt;/a&gt;, so Nova API is available, but OVH also provided all great API to manage all services (including Public Cloud).&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://fsamin.github.io/blog/blog/images/vps.png&#34; alt=&#34;Virtual Private Server&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;get-your-credentials:19904a09acc5f721904f781832408936&#34;&gt;Get your credentials&lt;/h2&gt;
+
+&lt;p&gt;First of all, you need a Public Cloud &lt;strong&gt;project&lt;/strong&gt;, if you haven&amp;rsquo;t got any available project, go to your &lt;a href=&#34;https://www.ovh.com/manager/cloud/index.html&#34;&gt;Manager&lt;/a&gt; to create one.&lt;/p&gt;
+
+&lt;p&gt;Now we will you a little command line interface tool : &lt;a href=&#34;https://github.com/admdwrf/ovhcli&#34;&gt;OVHCli&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;When you OVHCli is properly configured you should be able to create new Openstack Credentials on your Public Cloud Project. Here our project is name &lt;code&gt;Quickstart&lt;/code&gt;, so we run :&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $  ovhcli cloud project --name Quickstart info
+    creationDate: 2016-11-25T20:47:26+01:00
+    description: Quickstart
+    project_id: 901ea5f3c7074952a3fcf9bb042031be
+    status: ok
+    unleash: true
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Here is our project, now let&amp;rsquo;s create a user. You can create a user with the following command.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $ ovhcli cloud project --name Quickstart user create --description MyUser
+    creationDate: 2016-11-27T18:51:52.963684+01:00
+    description: &amp;quot;MyUser&amp;quot;
+    id: 32827
+    password: DadGK3dw4bdWUhkd6JbmWmxBRyAe62qX
+    status: creating
+    username: P5hytt78YZjQ
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;But you should either use &lt;code&gt;--env&lt;/code&gt; option and &lt;code&gt;eval&lt;/code&gt; it int bash to create all environment variables you need.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $ eval $(ovhcli cloud project --name Quickstart user create --description MyUser --env)
+    $ env | grep OS
+    OS_AUTH_URL=https://auth.cloud.ovh.net/v2
+    OS_REGION_NAME=SBG1
+    OS_TENANT_ID=901ea5f3c7074952a3fcf9bb042031be
+    OS_USERNAME=P5hytt78YZjQ
+    OS_PASSWORD=DadGK3dw4bdWUhkd6JbmWmxBRyAe62qX
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;packer-configuration-file:19904a09acc5f721904f781832408936&#34;&gt;Packer configuration file&lt;/h2&gt;
+
+&lt;p&gt;With those environment variables, we can now use &lt;strong&gt;Packer&lt;/strong&gt; we the &lt;strong&gt;Openstack&lt;/strong&gt; Provider.
+We will start with this &lt;code&gt;json&lt;/code&gt; file.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;    {
+    &amp;quot;variables&amp;quot;: {
+        &amp;quot;ovh_os_username&amp;quot;: &amp;quot;{{env `OS_USERNAME`}}&amp;quot;,
+        &amp;quot;ovh_os_password&amp;quot;: &amp;quot;{{env `OS_PASSWORD`}}&amp;quot;,
+        &amp;quot;ovh_project&amp;quot;: &amp;quot;{{env `OS_TENANT_ID`}}&amp;quot;,
+        &amp;quot;ovh_region&amp;quot;: &amp;quot;{{env `OS_REGION_NAME`}}&amp;quot;
+    },
+    &amp;quot;builders&amp;quot;: [{
+        &amp;quot;type&amp;quot;: &amp;quot;openstack&amp;quot;,
+        &amp;quot;identity_endpoint&amp;quot;: &amp;quot;https://auth.cloud.ovh.net/v2.0/&amp;quot;,
+        &amp;quot;username&amp;quot;: &amp;quot;{{user `ovh_os_username`}}&amp;quot;,
+        &amp;quot;password&amp;quot;: &amp;quot;{{user `ovh_os_key`}}&amp;quot;,
+        &amp;quot;tenant_id&amp;quot;: &amp;quot;{{user `ovh_project`}}&amp;quot;,
+        &amp;quot;region&amp;quot;: &amp;quot;{{user `ovh_region`}}&amp;quot;,
+        &amp;quot;source_image&amp;quot;: &amp;quot;de45f31c-e0a1-43a9-a6b9-0474d938da45&amp;quot;,
+        &amp;quot;flavor&amp;quot;: &amp;quot;vps-ssd-3&amp;quot;,
+        &amp;quot;ssh_username&amp;quot;: &amp;quot;debian&amp;quot;,
+        &amp;quot;image_name&amp;quot;: &amp;quot;Packer Test Image&amp;quot;,
+    }]
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;flavor-and-source-image:19904a09acc5f721904f781832408936&#34;&gt;Flavor and Source Image&lt;/h3&gt;
+
+&lt;p&gt;We this configuration, we only want to support environment varibles, but you could defined variables on command line, or in a file. See &lt;a href=&#34;https://www.packer.io/docs/templates/user-variables.html&#34;&gt;documentation&lt;/a&gt; for more details.&lt;/p&gt;
+
+&lt;p&gt;The important things here are &lt;code&gt;flavor&lt;/code&gt; and &lt;code&gt;source_image&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;A &lt;code&gt;flavor&lt;/code&gt; is a Virtual hardware template defining sizes for RAM, disk, number of cores, and so on. We need in Packer to set the flavor name we want to use.
+OVH provides a lot of different flavors, SSD based for high disk performance, CEPH bash for high availability disks, enhanced RAM Virtual Private Server and so on.&lt;/p&gt;
+
+&lt;p&gt;For testing purpose, we will use &lt;code&gt;VPS-SSD-3&lt;/code&gt;, which is unbelievable cheap and in my opinion the best quality/price ratio ever !&lt;/p&gt;
+
+&lt;p&gt;The &lt;code&gt;source_image&lt;/code&gt; is the operaing system we want to use to build our target image.&lt;/p&gt;
+
+&lt;p&gt;Find the source image you need with &lt;strong&gt;OVHCli&lt;/strong&gt;, here we need a Debian Jessie image.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $ ovhcli cloud project --name Quickstart image search Debian --region SBG1
+    - creationDate: 2016-11-07T12:26:17Z
+      id: de45f31c-e0a1-43a9-a6b9-0474d938da45
+      name: Debian 8
+      region: SBG1
+      size: 4.8828125
+      status: active
+      type: linux
+      user: debian
+      visibility: public
+    - creationDate: 2016-11-04T09:35:08Z
+      id: e4dee33b-19bc-4977-9807-f2da9dd8414b
+      name: Debian 7
+      region: SBG1
+      size: 4.8828125
+      status: active
+      type: linux
+      user: debian
+      visibility: public
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;user-data-script:19904a09acc5f721904f781832408936&#34;&gt;User data script&lt;/h3&gt;
+
+&lt;p&gt;We want to build an Openstack image from a Debian Jessie and install automatically nginx web server. We create a new file named &lt;code&gt;udata.sh&lt;/code&gt;`&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;    #/!/bin/bash
+    sudo apt-get update
+    sudo apt-get install -y nginx
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;And set this file as a &lt;code&gt;user_data_file&lt;/code&gt;. as part of the Openstack builder configuration.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;    ...
+     &amp;quot;builders&amp;quot;: [{
+        &amp;quot;type&amp;quot;: &amp;quot;openstack&amp;quot;,
+        ...
+        ...
+        &amp;quot;user_data_file&amp;quot;: &amp;quot;udata.sh&amp;quot;
+     }]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;validate-the-packer-configuration:19904a09acc5f721904f781832408936&#34;&gt;Validate the Packer configuration&lt;/h2&gt;
+
+&lt;p&gt;Before build your image, validate your file.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $ packer validate packer.json
+    Template validated successfully.
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now we are ready to build our image.&lt;/p&gt;
+
+&lt;h2 id=&#34;build-the-image:19904a09acc5f721904f781832408936&#34;&gt;Build the image&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $ packer build packer.json
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://fsamin.github.io/blog/blog/images/screen.png&#34; alt=&#34;Packer is building&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Note : This operation take several minutes.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Now our private image is ready to use. We can see it with &lt;strong&gt;OCHCli&lt;/strong&gt;, searching by name.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $ ovhcli cloud project --name Quickstart image search Packer --region SBG1
+    - creationDate: 2016-11-27T19:37:31Z
+      id: 9f2c2116-395d-437d-b135-d232a82233ce
+      minDisk: 40
+      name: Packer Test Image
+      region: SBG1
+      size: 1.9411011
+      status: active
+      type: linux
+      user: debian
+      visibility: private
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Your can also see it in the Web UI &lt;strong&gt;OVH Manager&lt;/strong&gt;, in the snaphot sections.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://fsamin.github.io/blog/blog/images/snapshot.png&#34; alt=&#34;Manager&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;deploy-the-image:19904a09acc5f721904f781832408936&#34;&gt;Deploy the image&lt;/h2&gt;
+
+&lt;p&gt;Let&amp;rsquo;s deploy it with &lt;strong&gt;OVHCli&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $ ovhcli cloud project --name Quickstart instance create MyServer --image &amp;quot;Packer Test Image&amp;quot; --flavor VPS-SSD-3 --region SBG1
+    - created: 2016-11-27T20:05:46Z
+      id: 0c4164ed-8010-401c-b10c-22fe82923971
+      ipAddresses:
+    - ip: 167.114.254.197
+      type: public
+      version: 4
+      name: Packer Test Image
+      region: SBG1
+      status: ACTIVE
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;After a few minutes, your instance is ready.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://fsamin.github.io/blog/blog/images/instance-ready.png&#34; alt=&#34;Manager&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;And Nginx is up and running&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://fsamin.github.io/blog/blog/images/nginx.png&#34; alt=&#34;Nginx&#34; /&gt;&lt;/p&gt;
+</description>
+    </item>
     
   </channel>
 </rss>
