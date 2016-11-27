@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"> <meta name="generator" content="Hugo 0.14" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="//fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/github.min.css">
+    <link rel="stylesheet" href="/blog/css/normalize.css">
+    <link rel="stylesheet" href="/blog/css/skeleton.css">
+    <link rel="stylesheet" href="/blog/css/custom.css">
+    <link rel="alternate" href="/blog/index.xml" type="application/rss+xml" title="blog">
+    <title>Build Openstack image with Packer on OVH Public Cloud - blog</title>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <header role="banner">
+            <div class="header-logo">
+                <a href="/"><img src="/images/logo.jpg" width="60" height="60" alt="blog"></a>
+            </div>
+            
+        </header>
+
+	<main role="main">
+		<article itemscope itemtype="http://schema.org/BlogPosting">
+			<h1 class="entry-title" itemprop="headline">Build Openstack image with Packer on OVH Public Cloud</h1>
+			<span class="entry-meta"><time itemprop="datePublished" datetime="2016-11-26">November 26, 2016</time></span>
+			<section itemprop="entry-text">
+				
+
+<h1 id="tl-dr:19904a09acc5f721904f781832408936">TL;DR</h1>
+
+<p><a href="https://www.packer.io/">Packer</a> is a tool from HashiCorp for creating machine and container images for multiple platforms from a single source configuration.</p>
+
+<p>Here we are going to use it on <a href="https://www.ovh.com/fr/">OVH</a> Public Cloud.</p>
+
+<p><img src="/blog/images/packer.png" alt="Packer" /></p>
+
+<h1 id="ovh-public-cloud:19904a09acc5f721904f781832408936">OVH Public Cloud</h1>
+
+<p><a href="https://www.ovh.com/fr/">OVH</a> Public Cloud is based on <a href="https://www.openstack.org/">Openstack</a>, so Nova API is available, but OVH also provided all great API to manage all services (including Public Cloud).</p>
+
+<p><img src="/blog/images/vps.png" alt="Virtual Private Server" /></p>
+
+<h2 id="get-your-credentials:19904a09acc5f721904f781832408936">Get your credentials</h2>
+
+<p>First of all, you need a Public Cloud <strong>project</strong>, if you haven&rsquo;t got any available project, go to your <a href="https://www.ovh.com/manager/cloud/index.html">Manager</a> to create one.</p>
+
+<p>Now we will you a little command line interface tool : <a href="https://github.com/admdwrf/ovhcli">OVHCli</a>.</p>
+
+<p>When you OVHCli is properly configured you should be able to create new Openstack Credentials on your Public Cloud Project. Here our project is name <code>Quickstart</code>, so we run :</p>
+
+<pre><code class="language-bash">    $  ovhcli cloud project --name Quickstart info
+    creationDate: 2016-11-25T20:47:26+01:00
+    description: Quickstart
+    project_id: 901ea5f3c7074952a3fcf9bb042031be
+    status: ok
+    unleash: true
+</code></pre>
+
+<p>Here is our project, now let&rsquo;s create a user. You can create a user with the following command.</p>
+
+<pre><code class="language-bash">    $ ovhcli cloud project --name Quickstart user create --description MyUser
+    creationDate: 2016-11-27T18:51:52.963684+01:00
+    description: &quot;MyUser&quot;
+    id: 32827
+    password: DadGK3dw4bdWUhkd6JbmWmxBRyAe62qX
+    status: creating
+    username: P5hytt78YZjQ
+</code></pre>
+
+<p>But you should either use <code>--env</code> option and <code>eval</code> it int bash to create all environment variables you need.</p>
+
+<pre><code class="language-bash">    $ eval $(ovhcli cloud project --name Quickstart user create --description MyUser --env)
+    $ env | grep OS
+    OS_AUTH_URL=https://auth.cloud.ovh.net/v2
+    OS_REGION_NAME=SBG1
+    OS_TENANT_ID=901ea5f3c7074952a3fcf9bb042031be
+    OS_USERNAME=P5hytt78YZjQ
+    OS_PASSWORD=DadGK3dw4bdWUhkd6JbmWmxBRyAe62qX
+</code></pre>
+
+<h2 id="packer-configuration-file:19904a09acc5f721904f781832408936">Packer configuration file</h2>
+
+<p>With those environment variables, we can now use <strong>Packer</strong> we the <strong>Openstack</strong> Provider.
+We will start with this <code>json</code> file.</p>
+
+<pre><code class="language-json">    {
+    &quot;variables&quot;: {
+        &quot;ovh_os_username&quot;: &quot;{{env `OS_USERNAME`}}&quot;,
+        &quot;ovh_os_password&quot;: &quot;{{env `OS_PASSWORD`}}&quot;,
+        &quot;ovh_project&quot;: &quot;{{env `OS_TENANT_ID`}}&quot;,
+        &quot;ovh_region&quot;: &quot;{{env `OS_REGION_NAME`}}&quot;
+    },
+    &quot;builders&quot;: [{
+        &quot;type&quot;: &quot;openstack&quot;,
+        &quot;identity_endpoint&quot;: &quot;https://auth.cloud.ovh.net/v2.0/&quot;,
+        &quot;username&quot;: &quot;{{user `ovh_os_username`}}&quot;,
+        &quot;password&quot;: &quot;{{user `ovh_os_key`}}&quot;,
+        &quot;tenant_id&quot;: &quot;{{user `ovh_project`}}&quot;,
+        &quot;region&quot;: &quot;{{user `ovh_region`}}&quot;,
+        &quot;source_image&quot;: &quot;de45f31c-e0a1-43a9-a6b9-0474d938da45&quot;,
+        &quot;flavor&quot;: &quot;vps-ssd-3&quot;,
+        &quot;ssh_username&quot;: &quot;debian&quot;,
+        &quot;image_name&quot;: &quot;Packer Test Image&quot;,
+    }]
+}
+</code></pre>
+
+<h3 id="flavor-and-source-image:19904a09acc5f721904f781832408936">Flavor and Source Image</h3>
+
+<p>We this configuration, we only want to support environment varibles, but you could defined variables on command line, or in a file. See <a href="https://www.packer.io/docs/templates/user-variables.html">documentation</a> for more details.</p>
+
+<p>The important things here are <code>flavor</code> and <code>source_image</code>.</p>
+
+<p>A <code>flavor</code> is a Virtual hardware template defining sizes for RAM, disk, number of cores, and so on. We need in Packer to set the flavor name we want to use.
+OVH provides a lot of different flavors, SSD based for high disk performance, CEPH bash for high availability disks, enhanced RAM Virtual Private Server and so on.</p>
+
+<p>For testing purpose, we will use <code>VPS-SSD-3</code>, which is unbelievable cheap and in my opinion the best quality/price ratio ever !</p>
+
+<p>The <code>source_image</code> is the operaing system we want to use to build our target image.</p>
+
+<p>Find the source image you need with <strong>OVHCli</strong>, here we need a Debian Jessie image.</p>
+
+<pre><code class="language-bash">    $ ovhcli cloud project --name Quickstart image search Debian --region SBG1
+    - creationDate: 2016-11-07T12:26:17Z
+      id: de45f31c-e0a1-43a9-a6b9-0474d938da45
+      name: Debian 8
+      region: SBG1
+      size: 4.8828125
+      status: active
+      type: linux
+      user: debian
+      visibility: public
+    - creationDate: 2016-11-04T09:35:08Z
+      id: e4dee33b-19bc-4977-9807-f2da9dd8414b
+      name: Debian 7
+      region: SBG1
+      size: 4.8828125
+      status: active
+      type: linux
+      user: debian
+      visibility: public
+</code></pre>
+
+<h3 id="user-data-script:19904a09acc5f721904f781832408936">User data script</h3>
+
+<p>We want to build an Openstack image from a Debian Jessie and install automatically nginx web server. We create a new file named <code>udata.sh</code>`</p>
+
+<pre><code class="language-shell">    #/!/bin/bash
+    sudo apt-get update
+    sudo apt-get install -y nginx
+</code></pre>
+
+<p>And set this file as a <code>user_data_file</code>. as part of the Openstack builder configuration.</p>
+
+<pre><code class="language-json">    ...
+     &quot;builders&quot;: [{
+        &quot;type&quot;: &quot;openstack&quot;,
+        ...
+        ...
+        &quot;user_data_file&quot;: &quot;udata.sh&quot;
+     }]
+</code></pre>
+
+<h2 id="validate-the-packer-configuration:19904a09acc5f721904f781832408936">Validate the Packer configuration</h2>
+
+<p>Before build your image, validate your file.</p>
+
+<pre><code class="language-bash">    $ packer validate packer.json
+    Template validated successfully.
+</code></pre>
+
+<p>Now we are ready to build our image.</p>
+
+<h2 id="build-the-image:19904a09acc5f721904f781832408936">Build the image</h2>
+
+<pre><code class="language-bash">    $ packer build packer.json
+</code></pre>
+
+<p><img src="/blog/images/screen.png" alt="Packer is building" /></p>
+
+<p><em>Note : This operation take several minutes.</em></p>
+
+<p>Now our private image is ready to use. We can see it with <strong>OCHCli</strong>, searching by name.</p>
+
+<pre><code class="language-bash">    $ ovhcli cloud project --name Quickstart image search Packer --region SBG1
+    - creationDate: 2016-11-27T19:37:31Z
+      id: 9f2c2116-395d-437d-b135-d232a82233ce
+      minDisk: 40
+      name: Packer Test Image
+      region: SBG1
+      size: 1.9411011
+      status: active
+      type: linux
+      user: debian
+      visibility: private
+</code></pre>
+
+<p>Your can also see it in the Web UI <strong>OVH Manager</strong>, in the snaphot sections.</p>
+
+<p><img src="/blog/images/snapshot.png" alt="Manager" /></p>
+
+<h2 id="deploy-the-image:19904a09acc5f721904f781832408936">Deploy the image</h2>
+
+<p>Let&rsquo;s deploy it with <strong>OVHCli</strong></p>
+
+<pre><code class="language-bash">    $ ovhcli cloud project --name Quickstart instance create MyServer --image &quot;Packer Test Image&quot; --flavor VPS-SSD-3 --region SBG1
+    - created: 2016-11-27T20:05:46Z
+      id: 0c4164ed-8010-401c-b10c-22fe82923971
+      ipAddresses:
+    - ip: 167.114.254.197
+      type: public
+      version: 4
+      name: Packer Test Image
+      region: SBG1
+      status: ACTIVE
+</code></pre>
+
+<p>After a few minutes, your instance is ready.</p>
+
+<p><img src="/blog/images/instance-ready.png" alt="Manager" /></p>
+
+<p>And Nginx is up and running</p>
+
+<p><img src="/blog/images/nginx.png" alt="Nginx" /></p>
+
+			</section>
+		</article>
+	</main>
+
+<footer role="contentinfo">
+    <div class="hr"></div>
+    <div class="footer-link">
+        <a href="mailto:francois.samin&#43;blog@gmail.com" target="_blank">Email</a> 
+        <a href="https://twitter.com/francoissamin" target="_blank">Twitter</a> 
+         
+        <a href="https://github.com/fsamin/" target="_blank">GitHub</a>
+    </div>
+    <div class="copyright">Copyright &copy; François Samin -  All rights reserved.</div>
+</footer>
+
+</div>
+
+
+<script>
+    (function(i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r;
+        i[r] = i[r] || function() {
+            (i[r].q = i[r].q || []).push(arguments)
+        }, i[r].l = 1 * new Date();
+        a = s.createElement(o),
+            m = s.getElementsByTagName(o)[0];
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+    ga('create', 'UA-88062507-1', 'auto');
+    ga('send', 'pageview');
+</script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+<script>
+    hljs.initHighlightingOnLoad();
+</script>
+
+</body>
+
+</html>

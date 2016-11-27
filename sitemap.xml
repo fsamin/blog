@@ -3,7 +3,13 @@
   
   <url>
     <loc>https://fsamin.github.io/blog/</loc>
+    <lastmod>2016-11-26T09:57:16+01:00</lastmod>
     <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://fsamin.github.io/blog/ovh-packer-openstack/</loc>
+    <lastmod>2016-11-26T09:57:16+01:00</lastmod>
   </url>
   
 </urlset>
