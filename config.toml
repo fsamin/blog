@@ -1,11 +1,12 @@
-baseurl = "https://fsamin.github.io/blog/"
+baseurl = "/blog"
 languageCode = "en"
 title = "blog"
 author = "François Samin"
 copyright = "François Samin -  All rights reserved."
 
 [params]
-  logo      = "/images/logo.jpg"
+  baseurl = "https://fsamin.github.io/blog/"
+  logo      = "/blog/images/profil.jpg"
   twitter   = "https://twitter.com/francoissamin"
   github    = "https://github.com/fsamin/"
   email     = "francois.samin+blog@gmail.com"
