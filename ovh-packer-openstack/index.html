@@ -19,7 +19,7 @@
 
         <header role="banner">
             <div class="header-logo">
-                <a href="/"><img src="/images/logo.jpg" width="60" height="60" alt="blog"></a>
+                <a href="https://fsamin.github.io/blog/"><img src="/blog/images/profil.jpg" width="60" height="60" alt="blog"></a>
             </div>
             
         </header>
@@ -41,7 +41,7 @@
 
 <h1 id="ovh-public-cloud:19904a09acc5f721904f781832408936">OVH Public Cloud</h1>
 
-<p><a href="https://www.ovh.com/fr/">OVH</a> Public Cloud is based on <a href="https://www.openstack.org/">Openstack</a>, so Nova API is available, but OVH also provided all great API to manage all services (including Public Cloud).</p>
+<p><a href="https://www.ovh.com/fr/">OVH</a> Public Cloud is based on <a href="https://www.openstack.org/">Openstack</a>, so Nova API is available, but OVH also provided a great <a href="https://api.ovh.com">API</a> to manage all services (including Public Cloud).</p>
 
 <p><img src="/blog/images/vps.png" alt="Virtual Private Server" /></p>
 
@@ -49,7 +49,7 @@
 
 <p>First of all, you need a Public Cloud <strong>project</strong>, if you haven&rsquo;t got any available project, go to your <a href="https://www.ovh.com/manager/cloud/index.html">Manager</a> to create one.</p>
 
-<p>Now we will you a little command line interface tool : <a href="https://github.com/admdwrf/ovhcli">OVHCli</a>.</p>
+<p>Now we will you a little command line interface tool : <a href="https://github.com/admdwrf/ovhcli">OVHCli</a> (Many thanks to <a href="https://twitter.com/fredericalix">@fredericalix</a>)</p>
 
 <p>When you OVHCli is properly configured you should be able to create new Openstack Credentials on your Public Cloud Project. Here our project is name <code>Quickstart</code>, so we run :</p>
 
@@ -83,7 +83,7 @@
     OS_PASSWORD=DadGK3dw4bdWUhkd6JbmWmxBRyAe62qX
 </code></pre>
 
-<h2 id="packer-configuration-file:19904a09acc5f721904f781832408936">Packer configuration file</h2>
+<h2 id="packer-builder-configuration:19904a09acc5f721904f781832408936">Packer Builder configuration</h2>
 
 <p>With those environment variables, we can now use <strong>Packer</strong> we the <strong>Openstack</strong> Provider.
 We will start with this <code>json</code> file.</p>
@@ -146,25 +146,37 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
       visibility: public
 </code></pre>
 
-<h3 id="user-data-script:19904a09acc5f721904f781832408936">User data script</h3>
+<h2 id="packer-provisionner:19904a09acc5f721904f781832408936">Packer Provisionner</h2>
 
-<p>We want to build an Openstack image from a Debian Jessie and install automatically nginx web server. We create a new file named <code>udata.sh</code>`</p>
+<p>We want to build an Openstack image from a Debian Jessie and install automatically Nginx web server. The provisioners section contains an array of all the provisioners that Packer should use to install and configure software within running machines prior to turning them into machine images.</p>
 
-<pre><code class="language-shell">    #/!/bin/bash
-    sudo apt-get update
+<p>We want to run following script to install NGINX in the virtual machine image. It should look like.</p>
+
+<pre><code class="language-shell">    sudo apt-get update
     sudo apt-get install -y nginx
 </code></pre>
 
-<p>And set this file as a <code>user_data_file</code>. as part of the Openstack builder configuration.</p>
+<p>Just add following provisionners in the packer file.</p>
 
-<pre><code class="language-json">    ...
-     &quot;builders&quot;: [{
-        &quot;type&quot;: &quot;openstack&quot;,
-        ...
-        ...
-        &quot;user_data_file&quot;: &quot;udata.sh&quot;
-     }]
+<pre><code class="language-json">    {
+        &quot;variables&quot;: {
+            ...
+        },
+        &quot;builders&quot;: [{
+            ...
+        }],
+        &quot;provisioners&quot;: [{
+            &quot;type&quot;: &quot;shell&quot;,
+            &quot;inline&quot;: [
+                &quot;sleep 30&quot;,
+                &quot;sudo apt-get update&quot;,
+                &quot;sudo apt-get install -y nginx&quot;
+            ]
+        }]
+    }
 </code></pre>
+
+<p><em>Note : Sleep 30s ensures that the virtual machine gets its IP address an so one&hellip;</em></p>
 
 <h2 id="validate-the-packer-configuration:19904a09acc5f721904f781832408936">Validate the Packer configuration</h2>
 
@@ -181,7 +193,7 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
 <pre><code class="language-bash">    $ packer build packer.json
 </code></pre>
 
-<p><img src="/blog/images/screen.png" alt="Packer is building" /></p>
+<p><img src="/blog/images/packer.gif" alt="Packer is building" /></p>
 
 <p><em>Note : This operation take several minutes.</em></p>
 
@@ -200,7 +212,7 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
       visibility: private
 </code></pre>
 
-<p>Your can also see it in the Web UI <strong>OVH Manager</strong>, in the snaphot sections.</p>
+<p>You can also see it in the Web UI <strong>OVH Manager</strong>, in the snaphot sections.</p>
 
 <p><img src="/blog/images/snapshot.png" alt="Manager" /></p>
 
@@ -208,17 +220,10 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
 
 <p>Let&rsquo;s deploy it with <strong>OVHCli</strong></p>
 
-<pre><code class="language-bash">    $ ovhcli cloud project --name Quickstart instance create MyServer --image &quot;Packer Test Image&quot; --flavor VPS-SSD-3 --region SBG1
-    - created: 2016-11-27T20:05:46Z
-      id: 0c4164ed-8010-401c-b10c-22fe82923971
-      ipAddresses:
-    - ip: 167.114.254.197
-      type: public
-      version: 4
-      name: Packer Test Image
-      region: SBG1
-      status: ACTIVE
+<pre><code class="language-bash">    $ ovhcli cloud project --name Quickstart instance create MyServer --image &quot;Packer Test Image&quot; --flavor vps-ssd-3 --region SBG1 --sshKey &lt;yourkey&gt;
 </code></pre>
+
+<p><img src="/blog/images/instance-created.png" alt="Instance building" /></p>
 
 <p>After a few minutes, your instance is ready.</p>
 
@@ -227,6 +232,19 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
 <p>And Nginx is up and running</p>
 
 <p><img src="/blog/images/nginx.png" alt="Nginx" /></p>
+
+<h1 id="conclusion:19904a09acc5f721904f781832408936">Conclusion</h1>
+
+<p>Packer is great to build Openstack image, but it&rsquo;s bigger when you decide to build your image with multiple builders.
+Let&rsquo;s imagine building your Application image as an <strong>Openstack image</strong> and a <strong>Docker image</strong> with a single packer configuration file&hellip;</p>
+
+<h1 id="links:19904a09acc5f721904f781832408936">Links</h1>
+
+<ul>
+<li>Packer - <a href="https://www.packer.io">https://www.packer.io</a></li>
+<li>OVH Website - <a href="https://www.ovh.com">https://www.ovh.com</a></li>
+<li>OVHCli on Github - <a href="https://github.com/admdwrf/ovhcli">https://github.com/admdwrf/ovhcli</a></li>
+</ul>
 
 			</section>
 		</article>
@@ -267,6 +285,9 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
     hljs.initHighlightingOnLoad();
 </script>
 
-</body>
+<script data-no-instant>document.write('<script src="http://'
+        + (location.host || 'localhost').split(':')[0]
+		+ ':1313/livereload.js?mindelay=10"></'
+        + 'script>')</script></body>
 
 </html>
