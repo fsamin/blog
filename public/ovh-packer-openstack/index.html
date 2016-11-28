@@ -51,7 +51,7 @@
 
 <p>Now we will you a little command line interface tool : <a href="https://github.com/admdwrf/ovhcli">OVHCli</a> (Many thanks to <a href="https://twitter.com/fredericalix">@fredericalix</a>)</p>
 
-<p>When you OVHCli is properly configured you should be able to create new Openstack Credentials on your Public Cloud Project. Here our project is name <code>Quickstart</code>, so we run :</p>
+<p>When you OVHCli is properly configured you should be able to create new Openstack Credentials on your Public Cloud Project. Here our project is named <code>Quickstart</code>, so we run :</p>
 
 <pre><code class="language-bash">    $  ovhcli cloud project --name Quickstart info
     creationDate: 2016-11-25T20:47:26+01:00
@@ -85,7 +85,7 @@
 
 <h2 id="packer-builder-configuration:19904a09acc5f721904f781832408936">Packer Builder configuration</h2>
 
-<p>With those environment variables, we can now use <strong>Packer</strong> we the <strong>Openstack</strong> Provider.
+<p>With those environment variables, we can now use <strong>Packer</strong> and the <strong>Openstack</strong> Provider easily.
 We will start with this <code>json</code> file.</p>
 
 <pre><code class="language-json">    {
@@ -110,9 +110,9 @@ We will start with this <code>json</code> file.</p>
 }
 </code></pre>
 
-<h3 id="flavor-and-source-image:19904a09acc5f721904f781832408936">Flavor and Source Image</h3>
+<p><em>Note : We this configuration, we only want to support environment varibles, but you could defined variables on command line, or in a file. See <a href="https://www.packer.io/docs/templates/user-variables.html">documentation</a> for more details.</em></p>
 
-<p>We this configuration, we only want to support environment varibles, but you could defined variables on command line, or in a file. See <a href="https://www.packer.io/docs/templates/user-variables.html">documentation</a> for more details.</p>
+<h3 id="flavor-and-source-image:19904a09acc5f721904f781832408936">Flavor and Source Image</h3>
 
 <p>The important things here are <code>flavor</code> and <code>source_image</code>.</p>
 
@@ -145,6 +145,8 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
       user: debian
       visibility: public
 </code></pre>
+
+<p>Here it is, pick the image ID of Debian 8 image and set it in as value of <code>source_image</code>in  your packer configuration file.</p>
 
 <h2 id="packer-provisionner:19904a09acc5f721904f781832408936">Packer Provisionner</h2>
 
@@ -285,9 +287,6 @@ Let&rsquo;s imagine building your Application image as an <strong>Openstack imag
     hljs.initHighlightingOnLoad();
 </script>
 
-<script data-no-instant>document.write('<script src="http://'
-        + (location.host || 'localhost').split(':')[0]
-		+ ':1313/livereload.js?mindelay=10"></'
-        + 'script>')</script></body>
+</body>
 
 </html>
