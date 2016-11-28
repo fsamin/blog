@@ -2,20 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>blog</title>
-    <link>http://localhost:1313/blog/</link>
+    <link>/blog/</link>
     <description>Recent content on blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>François Samin -  All rights reserved.</copyright>
     <lastBuildDate>Sat, 26 Nov 2016 09:57:16 +0100</lastBuildDate>
-    <atom:link href="http://localhost:1313/blog/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Build Openstack image with Packer on OVH Public Cloud</title>
-      <link>http://localhost:1313/blog/ovh-packer-openstack/</link>
+      <link>/blog/ovh-packer-openstack/</link>
       <pubDate>Sat, 26 Nov 2016 09:57:16 +0100</pubDate>
       
-      <guid>http://localhost:1313/blog/ovh-packer-openstack/</guid>
+      <guid>/blog/ovh-packer-openstack/</guid>
       <description>
 
 &lt;h1 id=&#34;tl-dr:19904a09acc5f721904f781832408936&#34;&gt;TL;DR&lt;/h1&gt;
@@ -24,13 +24,13 @@
 
 &lt;p&gt;Here we are going to use it on &lt;a href=&#34;https://www.ovh.com/fr/&#34;&gt;OVH&lt;/a&gt; Public Cloud.&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://localhost:1313/blog/blog/images/packer.png&#34; alt=&#34;Packer&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/blog/blog/images/packer.png&#34; alt=&#34;Packer&#34; /&gt;&lt;/p&gt;
 
 &lt;h1 id=&#34;ovh-public-cloud:19904a09acc5f721904f781832408936&#34;&gt;OVH Public Cloud&lt;/h1&gt;
 
 &lt;p&gt;&lt;a href=&#34;https://www.ovh.com/fr/&#34;&gt;OVH&lt;/a&gt; Public Cloud is based on &lt;a href=&#34;https://www.openstack.org/&#34;&gt;Openstack&lt;/a&gt;, so Nova API is available, but OVH also provided a great &lt;a href=&#34;https://api.ovh.com&#34;&gt;API&lt;/a&gt; to manage all services (including Public Cloud).&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://localhost:1313/blog/blog/images/vps.png&#34; alt=&#34;Virtual Private Server&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/blog/blog/images/vps.png&#34; alt=&#34;Virtual Private Server&#34; /&gt;&lt;/p&gt;
 
 &lt;h2 id=&#34;get-your-credentials:19904a09acc5f721904f781832408936&#34;&gt;Get your credentials&lt;/h2&gt;
 
@@ -38,7 +38,7 @@
 
 &lt;p&gt;Now we will you a little command line interface tool : &lt;a href=&#34;https://github.com/admdwrf/ovhcli&#34;&gt;OVHCli&lt;/a&gt; (Many thanks to &lt;a href=&#34;https://twitter.com/fredericalix&#34;&gt;@fredericalix&lt;/a&gt;)&lt;/p&gt;
 
-&lt;p&gt;When you OVHCli is properly configured you should be able to create new Openstack Credentials on your Public Cloud Project. Here our project is name &lt;code&gt;Quickstart&lt;/code&gt;, so we run :&lt;/p&gt;
+&lt;p&gt;When you OVHCli is properly configured you should be able to create new Openstack Credentials on your Public Cloud Project. Here our project is named &lt;code&gt;Quickstart&lt;/code&gt;, so we run :&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $  ovhcli cloud project --name Quickstart info
     creationDate: 2016-11-25T20:47:26+01:00
@@ -72,7 +72,7 @@
 
 &lt;h2 id=&#34;packer-builder-configuration:19904a09acc5f721904f781832408936&#34;&gt;Packer Builder configuration&lt;/h2&gt;
 
-&lt;p&gt;With those environment variables, we can now use &lt;strong&gt;Packer&lt;/strong&gt; we the &lt;strong&gt;Openstack&lt;/strong&gt; Provider.
+&lt;p&gt;With those environment variables, we can now use &lt;strong&gt;Packer&lt;/strong&gt; and the &lt;strong&gt;Openstack&lt;/strong&gt; Provider easily.
 We will start with this &lt;code&gt;json&lt;/code&gt; file.&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;    {
@@ -97,9 +97,9 @@ We will start with this &lt;code&gt;json&lt;/code&gt; file.&lt;/p&gt;
 }
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;h3 id=&#34;flavor-and-source-image:19904a09acc5f721904f781832408936&#34;&gt;Flavor and Source Image&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;Note : We this configuration, we only want to support environment varibles, but you could defined variables on command line, or in a file. See &lt;a href=&#34;https://www.packer.io/docs/templates/user-variables.html&#34;&gt;documentation&lt;/a&gt; for more details.&lt;/em&gt;&lt;/p&gt;
 
-&lt;p&gt;We this configuration, we only want to support environment varibles, but you could defined variables on command line, or in a file. See &lt;a href=&#34;https://www.packer.io/docs/templates/user-variables.html&#34;&gt;documentation&lt;/a&gt; for more details.&lt;/p&gt;
+&lt;h3 id=&#34;flavor-and-source-image:19904a09acc5f721904f781832408936&#34;&gt;Flavor and Source Image&lt;/h3&gt;
 
 &lt;p&gt;The important things here are &lt;code&gt;flavor&lt;/code&gt; and &lt;code&gt;source_image&lt;/code&gt;.&lt;/p&gt;
 
@@ -132,6 +132,8 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
       user: debian
       visibility: public
 &lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Here it is, pick the image ID of Debian 8 image and set it in as value of &lt;code&gt;source_image&lt;/code&gt;in  your packer configuration file.&lt;/p&gt;
 
 &lt;h2 id=&#34;packer-provisionner:19904a09acc5f721904f781832408936&#34;&gt;Packer Provisionner&lt;/h2&gt;
 
@@ -180,7 +182,7 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
 &lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $ packer build packer.json
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://localhost:1313/blog/blog/images/packer.gif&#34; alt=&#34;Packer is building&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/blog/blog/images/packer.gif&#34; alt=&#34;Packer is building&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;em&gt;Note : This operation take several minutes.&lt;/em&gt;&lt;/p&gt;
 
@@ -201,7 +203,7 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
 
 &lt;p&gt;You can also see it in the Web UI &lt;strong&gt;OVH Manager&lt;/strong&gt;, in the snaphot sections.&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://localhost:1313/blog/blog/images/snapshot.png&#34; alt=&#34;Manager&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/blog/blog/images/snapshot.png&#34; alt=&#34;Manager&#34; /&gt;&lt;/p&gt;
 
 &lt;h2 id=&#34;deploy-the-image:19904a09acc5f721904f781832408936&#34;&gt;Deploy the image&lt;/h2&gt;
 
@@ -210,15 +212,15 @@ OVH provides a lot of different flavors, SSD based for high disk performance, CE
 &lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;    $ ovhcli cloud project --name Quickstart instance create MyServer --image &amp;quot;Packer Test Image&amp;quot; --flavor vps-ssd-3 --region SBG1 --sshKey &amp;lt;yourkey&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://localhost:1313/blog/blog/images/instance-created.png&#34; alt=&#34;Instance building&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/blog/blog/images/instance-created.png&#34; alt=&#34;Instance building&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;After a few minutes, your instance is ready.&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://localhost:1313/blog/blog/images/instance-ready.png&#34; alt=&#34;Manager&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/blog/blog/images/instance-ready.png&#34; alt=&#34;Manager&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;And Nginx is up and running&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://localhost:1313/blog/blog/images/nginx.png&#34; alt=&#34;Nginx&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;/blog/blog/images/nginx.png&#34; alt=&#34;Nginx&#34; /&gt;&lt;/p&gt;
 
 &lt;h1 id=&#34;conclusion:19904a09acc5f721904f781832408936&#34;&gt;Conclusion&lt;/h1&gt;
 
